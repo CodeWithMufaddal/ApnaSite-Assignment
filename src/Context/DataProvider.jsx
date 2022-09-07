@@ -1,65 +1,82 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const ContextData = createContext()
 
 const DataProvider = ({ children }) => {
-
    let Bill = localStorage.getItem('Bill')
    let Data = Bill ? JSON.parse(Bill) : []
-
-   const [data, setData] = useState(
-      {
-         invoiceNo: Data?.length + 1,
-         Date: Date().slice(0, 15),
-         PartyName: '',
-         Mobile: '',
-         Particulars: [{
-            Name: '',
-            Price: '',
-            Quantity: '',
-            CGST: '',
-            SGST: '',
-            Amount: ''
-         }],
-         CGST: '',
-      }
-   )
 
    const Store = () => {
       return localStorage.getItem('Bill')
    }
 
-   useEffect(() => {
-      return () => {
-         !Store() && localStorage.setItem('Bill', [])
-      }
-   }, [setData])
+   const [totalAmount, setTotalAmount] = useState({ TotalAmount: 0, TotalQTY: 0, })
+   const [invoices, setInvoices] = useState([])
+   const [products, setProducts] = useState({
+      Name: '',
+      Price: 0,
+      QTY: 0,
+      GST: 18,
+      Unit: ''
+   })
+
+   const [data, setData] = useState({
+      invoiceNo: Data?.length + 1,
+      Date: new Date().toISOString().slice(0, 10),
+      PartyName: '',
+      Mobile: '',
+      Particulars: [],
+   })
+
+
 
    const handleOnSubmit = async (e) => {
       e.preventDefault()
-      let Storage = Store()
 
-      if (!Storage) {
+      if (!Store()) {
          localStorage.setItem('Bill', `[${JSON.stringify(data)}]`)
          let Bill = localStorage.getItem('Bill')
          let Data = Bill ? JSON.parse(Bill) : []
-         setData({
+         setData(() => ({
             invoiceNo: Data?.length + 1,
-         })
+            Date: new Date().toISOString().slice(0, 10),
+            PartyName: '',
+            Mobile: '',
+            Particulars: [],
+         }))
+         setInvoices(() => Data)
          return;
       }
 
-      let Data = await JSON.parse(Storage)
+      let Data = await JSON.parse(Store())
       await Data.push(data)
       let toString = JSON.stringify(Data)
       localStorage.setItem('Bill', `${toString}`)
-      setData({
+
+      setData(() => ({
          invoiceNo: Data?.length + 1,
-      })
+         Date: new Date().toISOString().slice(0, 10),
+         PartyName: '',
+         Mobile: '',
+         Particulars: [],
+      }))
+      setInvoices(() => Data)
    }
 
+
+
+   useEffect(() => {
+      let Data = Store() ? JSON.parse(Store()) : []
+      setInvoices(() => Data)
+      return () => {
+         !Store() && localStorage.setItem('Bill', [])
+      }
+   }, [setInvoices, setData])
+
+
+
    return (
-      <ContextData.Provider value={{ data, setData, handleOnSubmit }}>
+      <ContextData.Provider value={{ data, setData, handleOnSubmit, setProducts, products, invoices, setInvoices, totalAmount, setTotalAmount }}>
          {children}
       </ContextData.Provider>
    )
